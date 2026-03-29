@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RentX - Premium Room Rentals</title>
+    <!-- Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Application Styles -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="brand glow-text" id="nav-brand">RentX</div>
+            <div class="nav-links">
+                <button class="nav-btn active" data-target="home">Home</button>
+                <button class="nav-btn" data-target="view-rooms">View Rooms</button>
+                <button class="nav-btn" data-target="add-room">Add Room</button>
+                <div class="auth-buttons">
+                    <button class="nav-btn auth-btn" data-target="login">Login</button>
+                    <button class="nav-btn auth-btn primary-btn" data-target="register">Register</button>
+                </div>
+            </div>
+            <button class="mobile-menu-btn" id="mobile-menu-btn">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <!-- Home Section -->
+        <section id="home" class="page-section active">
+            <div class="hero-fullscreen">
+                <div class="hero-overlay"></div>
+                <div class="hero-center-content">
+                    <h1 class="hero-title-massive" style="margin-bottom: 3rem;">RentX <span class="gradient-text">For You</span></h1>
+                    
+                    <!-- Beautiful Glass Search Bar -->
+                    <div class="hero-search-bar glass-panel">
+                        <div class="search-field">
+                            <label>Location</label>
+                            <div class="field-input-row">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>
+                                <input type="text" placeholder="City, neighborhood, or zip code">
+                            </div>
+                        </div>
+                        <div class="search-divider"></div>
+                        <div class="search-field">
+                            <label>Property Type</label>
+                            <div class="field-input-row">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary-color)" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+                                <select>
+                                    <option>All Properties</option>
+                                    <option>Studio Apartment</option>
+                                    <option>1 BHK - 3 BHK</option>
+                                    <option>Shared Space / PG</option>
+                                </select>
+                            </div>
+                        </div>
+                        <button class="search-submit-btn nav-btn" data-target="view-rooms">
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:8px;"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                            Search
+                        </button>
+                    </div>
+
+                    <div class="hero-stats-row">
+                        <div class="stat-item"><h3>10k+</h3><p>Active listings</p></div>
+                        <div class="stat-item"><h3>50+</h3><p>Cities mapped</p></div>
+                        <div class="stat-item"><h3>4.9/5</h3><p>App rating</p></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View Rooms Section -->
+        <section id="view-rooms" class="page-section hidden">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: flex-end; text-align: left; margin-bottom: 2rem;">
+                <div>
+                    <h2 class="section-title" style="margin-bottom: 0.2rem;">Available <span class="gradient-text">Rooms</span></h2>
+                    <p class="section-desc" style="margin: 0;">Browse our collection of beautifully curated spaces.</p>
+                </div>
+                <button class="primary-btn nav-btn" data-target="add-room" style="display: flex; align-items: center; gap: 8px; opacity: 1; padding: 0.6rem 1.2rem; cursor: pointer;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    List Your Room
+                </button>
+            </div>
+            <div class="room-grid" id="room-grid">
+                <!-- Rooms will be dynamically injected here by app.js -->
+            </div>
+        </section>
+
+        <!-- Add Room Section -->
+        <section id="add-room" class="page-section hidden">
+            <div class="form-container glass-panel">
+                <h2 class="form-title">List a <span class="gradient-text">New Room</span></h2>
+                <form id="add-room-form" style="display: flex; flex-direction: column; gap: 1.5rem;">
+                    <div class="input-group">
+                        <label for="room-location">Location</label>
+                        <div style="display: flex; gap: 8px;">
+                            <input type="text" id="room-location" required placeholder="Enter location or use GPS" style="flex: 1;">
+                            <button type="button" id="get-gps-btn" style="background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.2); color: white; border-radius: 8px; padding: 0 1rem; cursor: pointer; transition: 0.3s; white-space: nowrap; font-weight: 500;">
+                                📍 Use GPS
+                            </button>
+                        </div>
+                    </div>
+                    <div class="input-group">
+                        <label for="room-category">Room Category</label>
+                        <select id="room-category" required style="width: 100%; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; margin-top: 0.3rem;">
+                            <option value="BHK">Apartment (BHK)</option>
+                            <option value="PG">Shared / PG</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="bhk-group">
+                        <label for="room-bhkType">BHK Type</label>
+                        <select id="room-bhkType" style="width: 100%; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; margin-top: 0.3rem;">
+                            <option value="1BHK">1 BHK</option>
+                            <option value="2BHK">2 BHK</option>
+                            <option value="3BHK">3 BHK</option>
+                        </select>
+                    </div>
+                    <div class="input-group" id="pg-group" style="display: none;">
+                        <label for="room-pgSharing">PG Sharing Limit</label>
+                        <select id="room-pgSharing" style="width: 100%; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; margin-top: 0.3rem;">
+                            <option value="1_sharing">Private Room (1 Sharing)</option>
+                            <option value="2_sharing">2 Sharing</option>
+                            <option value="3_sharing">3 Sharing</option>
+                            <option value="4_sharing">4 Sharing</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="room-price">Price per Month ($)</label>
+                        <input type="number" id="room-price" required placeholder="1500" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label for="room-image">Upload Photo</label>
+                        <input type="file" id="room-image" accept="image/*" required style="padding: 0.6rem;">
+                    </div>
+                    <div class="input-group">
+                        <label for="room-desc">Description</label>
+                        <textarea id="room-desc" required placeholder="Tell us about the space..."></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn full-width">Publish Listing</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Login Section -->
+        <section id="login" class="page-section hidden">
+            <div class="form-container glass-panel auth-panel">
+                <h2 class="form-title">Welcome <span class="gradient-text">Back</span></h2>
+                <p class="form-subtitle">Login to manage your listings and bookings.</p>
+                <form id="login-form">
+                    <div class="input-group">
+                        <label for="login-email">Email or Phone Number</label>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+                            <input type="text" id="login-email" required placeholder="Email or Phone" style="flex: 1; margin: 0;">
+                            <button type="button" class="get-otp-btn" id="login-get-otp" style="background: rgba(88,166,255,0.1); color: var(--primary-color); border: 1px solid rgba(88,166,255,0.3); border-radius: 8px; padding: 0 1rem; cursor: pointer; font-weight: 500; transition: all 0.3s;">Send OTP</button>
+                        </div>
+                    </div>
+                    <div class="input-group otp-group hidden" id="login-otp-group">
+                        <label for="login-otp">Enter 6-Digit OTP</label>
+                        <input type="text" id="login-otp" placeholder="123456" maxlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label for="login-password">Password</label>
+                        <input type="text" id="login-password" required placeholder="Enter your password">
+                    </div>
+                    <button type="submit" class="submit-btn full-width">Sign In</button>
+                    <p class="form-footer">Don't have an account? <span class="text-link" data-target="register">Register here</span>.</p>
+                </form>
+            </div>
+        </section>
+
+        <!-- Register Section -->
+        <section id="register" class="page-section hidden">
+            <div class="form-container glass-panel auth-panel">
+                <h2 class="form-title">Create an <span class="gradient-text">Account</span></h2>
+                <p class="form-subtitle">Join us to find or list your perfect space.</p>
+                <form id="register-form">
+                    <div class="input-group">
+                        <label for="reg-name">Full Name</label>
+                        <input type="text" id="reg-name" required placeholder="Jane Doe">
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-email">Email or Phone Number</label>
+                        <div style="display: flex; gap: 0.5rem; margin-top: 0.3rem;">
+                            <input type="text" id="reg-email" required placeholder="Email or Phone" style="flex: 1; margin: 0;">
+                            <button type="button" class="get-otp-btn" id="reg-get-otp" style="background: rgba(88,166,255,0.1); color: var(--primary-color); border: 1px solid rgba(88,166,255,0.3); border-radius: 8px; padding: 0 1rem; cursor: pointer; font-weight: 500; transition: all 0.3s;">Send OTP</button>
+                        </div>
+                    </div>
+                    <div class="input-group otp-group hidden" id="reg-otp-group">
+                        <label for="reg-otp">Enter 6-Digit OTP</label>
+                        <input type="text" id="reg-otp" placeholder="123456" maxlength="6">
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-role">Account Type</label>
+                        <select id="reg-role" required style="width: 100%; padding: 0.8rem; border: 1px solid rgba(255,255,255,0.2); border-radius: 8px; background: rgba(0,0,0,0.5); color: white; margin-top: 0.3rem;">
+                            <option value="tenant">I want to rent a room (Tenant)</option>
+                            <option value="owner">I want to list a room (Owner)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label for="reg-password">Password</label>
+                        <input type="text" id="reg-password" required placeholder="Enter your password" minlength="6">
+                    </div>
+                    <button type="submit" class="submit-btn full-width">Create Account</button>
+                    <p class="form-footer">Already have an account? <span class="text-link" data-target="login">Sign in</span>.</p>
+                </form>
+            </div>
+        </section>
+
+        <!-- Room Details Modal -->
+        <div id="room-modal" class="modal hidden">
+            <div class="modal-content glass-panel">
+                <button class="close-modal" id="close-modal">&times;</button>
+                <div class="modal-layout">
+                    <!-- Left: Details & Map -->
+                    <div class="modal-details">
+                        <h2 id="modal-title" class="gradient-text">Room Title</h2>
+                        <p id="modal-location" class="text-muted" style="margin-top: 5px; color: var(--text-muted); display: flex; align-items: center; gap: 4px;">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg> 
+                            <span id="modal-loc-text">Location</span>
+                        </p>
+                        
+                        <div class="map-container" style="margin-top: 1.5rem; border-radius: 12px; overflow: hidden; height: 300px; border: 1px solid rgba(255,255,255,0.1);">
+                            <iframe id="modal-map" width="100%" height="100%" frameborder="0" style="border:0" allowfullscreen></iframe>
+                        </div>
+                    </div>
+                    
+                    <!-- Right: Chat System -->
+                    <div class="modal-chat">
+                        <h3 style="margin-bottom: 1rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border-color); font-size: 1.2rem;">Chat with Owner</h3>
+                        <div class="chat-messages" id="chat-messages">
+                            <!-- Messages appended via JS -->
+                        </div>
+                        <div class="chat-input-area">
+                            <input type="text" id="chat-input" placeholder="Type a message...">
+                            <button id="send-chat-btn" class="primary-btn">Send</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Application Logic -->
+    <script src="app.js"></script>
+</body>
+</html>
