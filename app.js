@@ -86,19 +86,42 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        rooms.forEach((room) => {
+        // --- AI Recommendation Sorting ---
+        const prefLoc = localStorage.getItem('ai_pref_location');
+        const prefCat = localStorage.getItem('ai_pref_category');
+
+        let sortedRooms = [...rooms];
+        if (prefLoc || prefCat) {
+            sortedRooms.sort((a, b) => {
+                let scoreA = 0, scoreB = 0;
+                if (prefLoc && a.location.toLowerCase().includes(prefLoc)) scoreA += 10;
+                if (prefCat && prefCat !== 'Any' && a.category === prefCat) scoreA += 5;
+                if (prefLoc && b.location.toLowerCase().includes(prefLoc)) scoreB += 10;
+                if (prefCat && prefCat !== 'Any' && b.category === prefCat) scoreB += 5;
+                return scoreB - scoreA;
+            });
+        }
+
+        sortedRooms.forEach((room) => {
             const card = document.createElement('div');
             card.className = 'room-card';
             
             // Handle tags
             const tagInfo = room.category === 'BHK' ? room.bhkType : (room.pgSharing ? room.pgSharing.replace('_', ' ') : 'PG');
-            const ownerName = room.ownerId ? room.ownerId.username : "Owner";
+            const ownerName = room.ownerId && room.ownerId.username ? room.ownerId.username : "Verified Owner";
+
+            // AI Badge Logic
+            let aiBadge = '';
+            if ((prefLoc && room.location.toLowerCase().includes(prefLoc)) || (prefCat && prefCat !== 'Any' && room.category === prefCat)) {
+                aiBadge = `<span style="font-size: 0.75rem; background: linear-gradient(135deg, #FFD700, #F7931A); color: #000; padding: 2px 8px; border-radius: 12px; margin-bottom: 5px; font-weight: bold; display: inline-block; margin-right: 5px;">✨ AI Recommended</span>`;
+            }
 
             card.innerHTML = `
-                <img src="${room.images && room.images[0] ? room.images[0] : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'}" alt="${room.title}" class="room-image" onerror="this.src='https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'">
+                <img src="${room.images && room.images.length > 0 ? room.images[0] : 'https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'}" alt="${room.title}" class="room-image" onerror="this.src='https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'">
                 <div class="room-content">
                     <div class="room-header">
                         <div>
+                            ${aiBadge}
                             <span style="font-size: 0.75rem; background: var(--primary-color); color: white; padding: 2px 8px; border-radius: 12px; margin-bottom: 5px; display: inline-block;">${tagInfo}</span>
                             <h3 class="room-title">${room.title}</h3>
                             <div class="room-location">
@@ -110,7 +133,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             $${room.price}<span>/mo</span>
                         </div>
                     </div>
-                    <p class="room-desc">${room.description.length > 80 ? room.description.substring(0, 80) + '...' : room.description}</p>
+                    <p class="room-desc">${room.description && room.description.length > 80 ? room.description.substring(0, 80) + '...' : (room.description || 'No description provided.')}</p>
                     <div class="room-footer" style="display: flex; justify-content: space-between; align-items: center; margin-top: 15px;">
                         <span style="font-size: 0.8rem; color: #666;">Listed by: ${ownerName}</span>
                         <button class="view-details-btn">View Details</button>
@@ -123,6 +146,47 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             grid.appendChild(card);
         });
+    }
+
+    // 2.5 Home Page Search & GPS Logic
+    const homeGpsBtn = document.getElementById('home-gps-btn');
+    const searchLocationInput = document.getElementById('search-location');
+    if (homeGpsBtn && searchLocationInput) {
+        homeGpsBtn.addEventListener('click', () => {
+             if (!navigator.geolocation) return alert('Geolocation is not supported by your browser.');
+             homeGpsBtn.style.opacity = '0.5';
+             navigator.geolocation.getCurrentPosition(async (position) => {
+                 const lat = position.coords.latitude;
+                 const lon = position.coords.longitude;
+                 try {
+                     const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+                     const data = await res.json();
+                     if (data && data.address) {
+                         const city = data.address.city || data.address.town || data.address.village || data.address.county || "";
+                         searchLocationInput.value = city;
+                     }
+                 } catch(e) {}
+                 homeGpsBtn.style.opacity = '1';
+             });
+        });
+    }
+
+    const searchBtn = document.querySelector('.search-bar .primary-btn');
+    if (searchBtn && searchLocationInput) {
+        searchBtn.addEventListener('click', () => {
+            const loc = searchLocationInput.value.trim().toLowerCase();
+            const catSelect = UtilsFindCategory(); // Helper since ID isn't set elegantly on the select in index.html sometimes
+            const cat = catSelect ? catSelect.value : 'Any';
+            
+            if (loc) localStorage.setItem('ai_pref_location', loc);
+            if (cat) localStorage.setItem('ai_pref_category', cat);
+            
+            navigateTo('view-rooms');
+        });
+    }
+
+    function UtilsFindCategory() {
+        return document.querySelector('.search-bar select');
     }
 
     // 3. API Submissions
@@ -306,69 +370,77 @@ document.addEventListener('DOMContentLoaded', () => {
             const pgSharing = document.getElementById('room-pgSharing') ? document.getElementById('room-pgSharing').value : '1_sharing';
 
             const fileInput = document.getElementById('room-image');
-            const file = fileInput.files[0];
+            const files = fileInput.files;
             
-            if (!file) return alert('Please select a photo for the room.');
+            if (!files || files.length === 0) return alert('Please select at least one photo for the room.');
 
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = async () => {
-                const base64Image = reader.result;
+            // Read multiple files natively
+            const base64Images = [];
+            const readPromises = Array.from(files).map(file => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                });
+            });
 
-                const locVal = document.getElementById('room-location').value;
-                const cityOnly = locVal.split(',')[0].trim();
-                let autoTitle = "Room";
-                if (category === 'BHK') autoTitle = `${bhkType} Apartment in ${cityOnly}`;
-                if (category === 'PG') autoTitle = `${pgSharing.replace('_', ' ')} PG in ${cityOnly}`;
-                if (category === 'Studio') autoTitle = `Studio in ${cityOnly}`;
+            try {
+                const results = await Promise.all(readPromises);
+                base64Images.push(...results);
+            } catch (error) {
+                return alert("Failed to process the uploaded images. Please try again.");
+            }
 
-                const payload = {
-                    title: autoTitle,
-                    location: locVal,
-                    price: Number(document.getElementById('room-price').value),
-                    images: [base64Image],
-                    description: document.getElementById('room-desc').value,
-                    category: category
-                };
+            const locVal = document.getElementById('room-location').value;
+            const cityOnly = locVal.split(',')[0].trim();
+            let autoTitle = "Room";
+            if (category === 'BHK') autoTitle = `${bhkType} Apartment in ${cityOnly}`;
+            if (category === 'PG') autoTitle = `${pgSharing.replace('_', ' ')} PG in ${cityOnly}`;
+            if (category === 'Studio') autoTitle = `Studio in ${cityOnly}`;
 
-                if (category === 'BHK') payload.bhkType = bhkType;
-                if (category === 'PG') payload.pgSharing = pgSharing;
+            const payload = {
+                title: autoTitle,
+                location: locVal,
+                price: Number(document.getElementById('room-price').value),
+                images: base64Images,
+                ownerPhone: document.getElementById('room-owner-phone') ? document.getElementById('room-owner-phone').value : '',
+                description: document.getElementById('room-desc').value,
+                category: category
+            };
 
-                try {
-                    const res = await fetch(`${API_URL}/rooms`, {
-                        method: 'POST',
-                        headers: { 
-                            'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${token}`
-                        },
-                        body: JSON.stringify(payload)
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        alert("Listing successfully published!");
-                        addRoomForm.reset();
-                        if(typeof window.loadRooms === 'function') window.loadRooms(); // Attempt to refresh via global if exposed
-                        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-                        const targetNavBtn = document.querySelector(`.nav-btn[data-target="view-rooms"]`);
-                        if(targetNavBtn) targetNavBtn.classList.add('active');
-                        
-                        document.querySelectorAll('.page-section').forEach(sec => sec.classList.add('hidden'));
-                        const viewRoomsSec = document.getElementById('view-rooms');
-                        if (viewRoomsSec) viewRoomsSec.classList.remove('hidden');
-                        
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    } else {
-                        alert(data.message || 'Failed to add room. Remember, only Owners can add rooms.');
-                    }
-                } catch (err) {
-                    alert('Server error: Is the backend running?');
+            if (category === 'BHK') payload.bhkType = bhkType;
+            if (category === 'PG') payload.pgSharing = pgSharing;
+
+            try {
+                const res = await fetch(`${API_URL}/rooms`, {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert("Listing successfully published!");
+                    addRoomForm.reset();
+                    if(typeof window.loadRooms === 'function') window.loadRooms();
+                    document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+                    const targetNavBtn = document.querySelector(`.nav-btn[data-target="view-rooms"]`);
+                    if(targetNavBtn) targetNavBtn.classList.add('active');
+                    
+                    document.querySelectorAll('.page-section').forEach(sec => sec.classList.add('hidden'));
+                    const viewRoomsSec = document.getElementById('view-rooms');
+                    if (viewRoomsSec) viewRoomsSec.classList.remove('hidden');
+                    
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    alert(data.message || 'Failed to add room.');
                 }
-            };
-            
-            reader.onerror = error => {
-                console.error("Error reading file: ", error);
-                alert("Failed to process the uploaded image.");
-            };
+            } catch (err) {
+                alert('Server error: Is the backend running?');
+            }
         });
     }
 
@@ -390,65 +462,100 @@ document.addEventListener('DOMContentLoaded', () => {
         if(authDiv) authDiv.appendChild(logoutBtn);
     }
 
-    // -- Modal & Maps & Chat Logic --
+    // -- Modal, Maps, Slider & WhatsApp Logic --
     const roomModal = document.getElementById('room-modal');
-    const closeModalBtn = document.getElementById('close-modal');
-    const modalTitle = document.getElementById('modal-title');
-    const modalLocText = document.getElementById('modal-loc-text');
-    const modalMap = document.getElementById('modal-map');
-    
-    const chatMessages = document.getElementById('chat-messages');
-    const chatInput = document.getElementById('chat-input');
-    const sendChatBtn = document.getElementById('send-chat-btn');
+    const closeModalBtn = document.getElementById('modal-close');
 
     window.openModal = function(room) {
         if (!roomModal) return;
-        modalTitle.textContent = room.title;
-        modalLocText.textContent = room.location;
+        document.getElementById('modal-title').textContent = room.title;
+        document.getElementById('modal-location').textContent = room.location;
+        document.getElementById('modal-price').textContent = `$${room.price}/mo`;
         
-        // Google Maps Embed URL by location name (No API key needed for basic place search iframe)
+        // Map Injection
         const encodedLocation = encodeURIComponent(room.location);
-        modalMap.src = `https://maps.google.com/maps?q=${encodedLocation}&t=&z=13&ie=UTF8&iwloc=&output=embed`;
+        const mapContainer = document.getElementById('modal-map-container');
+        if(mapContainer) mapContainer.innerHTML = `<iframe width="100%" height="100%" frameborder="0" style="border:0" src="https://maps.google.com/maps?q=${encodedLocation}&t=&z=13&ie=UTF8&iwloc=&output=embed" allowfullscreen></iframe>`;
         
-        // Reset chat
-        chatMessages.innerHTML = `<div class="chat-bubble received">Hi! I'm the owner of <b>${room.title}</b>. Are you interested in this room?</div>`;
+        // Image Slider Assembly
+        const sliderContainer = document.getElementById('modal-slider-container');
+        const sliderDots = document.getElementById('slider-dots');
+        const prevBtn = document.getElementById('slider-prev');
+        const nextBtn = document.getElementById('slider-next');
         
+        if (sliderContainer) {
+            sliderContainer.innerHTML = '';
+            sliderDots.innerHTML = '';
+            
+            const images = (room.images && room.images.length > 0) ? room.images : ['https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=800'];
+            
+            images.forEach((imgSrc, index) => {
+                sliderContainer.innerHTML += `<div class="slider-img-wrap"><img class="slider-img" src="${imgSrc}" alt="Room Image"></div>`;
+                if (images.length > 1) {
+                    sliderDots.innerHTML += `<div class="slider-dot ${index === 0 ? 'active' : ''}" data-index="${index}"></div>`;
+                }
+            });
+
+            let currentSlide = 0;
+            const updateSlider = () => {
+                sliderContainer.style.transform = `translateX(-${currentSlide * 100}%)`;
+                document.querySelectorAll('.slider-dot').forEach((dot, idx) => {
+                    dot.classList.toggle('active', idx === currentSlide);
+                });
+            };
+
+            if (images.length > 1) {
+                prevBtn.style.display = 'flex';
+                nextBtn.style.display = 'flex';
+                prevBtn.onclick = () => { currentSlide = (currentSlide > 0) ? currentSlide - 1 : images.length - 1; updateSlider(); };
+                nextBtn.onclick = () => { currentSlide = (currentSlide < images.length - 1) ? currentSlide + 1 : 0; updateSlider(); };
+                document.querySelectorAll('.slider-dot').forEach(dot => {
+                    dot.onclick = (e) => { currentSlide = parseInt(e.target.dataset.index); updateSlider(); };
+                });
+            } else {
+                prevBtn.style.display = 'none';
+                nextBtn.style.display = 'none';
+            }
+        }
+
+        // Action Buttons Setup
+        const waBtn = document.getElementById('whatsapp-btn');
+        if(waBtn) {
+            waBtn.onclick = () => {
+                const phone = room.ownerPhone ? room.ownerPhone.replace(/\D/g,'') : "1234567890";
+                const text = encodeURIComponent(`Hi! I'm interested in your room listing on RentX: ${room.title}`);
+                window.open(`https://wa.me/${phone}?text=${text}`, '_blank');
+            };
+        }
+
+        const bookBtn = document.getElementById('book-now-btn');
+        if(bookBtn) {
+            bookBtn.onclick = () => {
+                const originalText = bookBtn.innerHTML;
+                bookBtn.innerHTML = '⌛ Processing Payment Details...';
+                bookBtn.disabled = true;
+                setTimeout(() => {
+                    alert("This is a beautiful mock transaction!\nIn a production environment, a Stripe or Razorpay checkout modal would safely handle the deposit right here.");
+                    bookBtn.innerHTML = originalText;
+                    bookBtn.disabled = false;
+                }, 1800);
+            };
+        }
+
         roomModal.classList.remove('hidden');
-    }
+        document.body.style.overflow = 'hidden';
+    };
 
-    if (closeModalBtn) {
-        closeModalBtn.addEventListener('click', () => {
-            roomModal.classList.add('hidden');
-            modalMap.src = ''; // stop iframe loading
-        });
-    }
+    const closeBehavior = () => {
+        roomModal.classList.add('hidden');
+        document.body.style.overflow = 'auto';
+        const mapContainer = document.getElementById('modal-map-container');
+        if(mapContainer) mapContainer.innerHTML = '';
+    };
 
-    function sendChatMessage() {
-        if (!chatInput) return;
-        const text = chatInput.value.trim();
-        if (!text) return;
-
-        // Append user message
-        const msgDiv = document.createElement('div');
-        msgDiv.className = 'chat-bubble sent';
-        msgDiv.textContent = text;
-        chatMessages.appendChild(msgDiv);
-        chatInput.value = '';
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-
-        // Mock automated response after 1 second
-        setTimeout(() => {
-            const replyDiv = document.createElement('div');
-            replyDiv.className = 'chat-bubble received';
-            replyDiv.textContent = "Thanks for your message! As this is an automated demo, the owner will respond right here later.";
-            chatMessages.appendChild(replyDiv);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }, 1000);
-    }
-
-    if (sendChatBtn) sendChatBtn.addEventListener('click', sendChatMessage);
-    if (chatInput) chatInput.addEventListener('keypress', (e) => { 
-        if (e.key === 'Enter') sendChatMessage(); 
-    });
+    if (closeModalBtn) closeModalBtn.addEventListener('click', closeBehavior);
+    
+    const modalOverlay = document.getElementById('modal-overlay');
+    if (modalOverlay) modalOverlay.addEventListener('click', closeBehavior);
 
 });

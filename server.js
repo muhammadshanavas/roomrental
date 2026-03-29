@@ -45,7 +45,7 @@ app.use(express.static(__dirname));
 const otpStore = {}; 
 const users = [];
 const roomsDb = [
-    { title: "Cozy Downtown Studio", location: "New York, NY", price: 1500, category: "BHK", bhkType: "1BHK", description: "Beautiful view!" }
+    { title: "Cozy Downtown Studio", location: "New York, NY", price: 1500, category: "BHK", bhkType: "1BHK", description: "Beautiful view in a modern apartment.", ownerPhone: "1234567890", images: ["https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1000", "https://images.unsplash.com/photo-1502672260266-1c1c24226133?w=1000"] }
 ];
 
 // Configure your email transporter here
